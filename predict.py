@@ -1,11 +1,18 @@
-import os, time, json, cv2
+import os, time, json
 # Set log level
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 
 import tensorflow as tf
 import numpy as np
 
-batch_size = 4
+from tensorflow.python.client import device_lib
+
+def get_available_gpus():
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos if x.device_type == 'GPU']
+
+num_gpus = 1
+batch_size = 16
 
 def get_label():
     '''read label file'''
@@ -28,15 +35,17 @@ def get_dataset(filename):
             'image/filepath': tf.FixedLenFeature([], tf.string),
             })
         image_data = tf.cast(feats['image/encoded'], tf.string)
-        image_data = tf.image.decode_image(image_data)
-        image_data = tf.reshape(image_data, [331, 331])
+        image_data = tf.image.decode_jpeg(image_data)
+        image_data = tf.image.resize_images(image_data, [331, 331])
+        image_data = tf.divide(image_data, 255)
         label = tf.cast(feats['image/class/label'], tf.string)
         filepath = tf.cast(feats['image/filepath'], tf.string)
         return image_data, label, filepath
-        
+
     # extract data
     dataset = tf.data.TFRecordDataset(filename, num_parallel_reads=8)
     dataset = dataset.map(parse_exmp)
+    dataset = dataset.batch(batch_size)
     return dataset
 
 def predict(filename):
@@ -44,7 +53,7 @@ def predict(filename):
     label_map = get_label()
     # read tfrecord file by tf.data
     dataset = get_dataset(filename)
-    dataset.apply(tf.contrib.data.prefetch_to_device("/gpu:0"))
+    # dataset.apply(tf.contrib.data.prefetch_to_device("/gpu:0"))
     # load data
     iterator = dataset.make_one_shot_iterator()
     features = iterator.get_next()
@@ -53,41 +62,41 @@ def predict(filename):
     with tf.Session() as sess:
         tf.global_variables_initializer()
         t1 = time.time()
-        # image_data_list, filepath_list, res = [], [], []
         res = []
-        i = 0
+        content = {}
+        count = 0
         try:
             while True:
                 [_image, _label, _filepath] = sess.run(fetches=features)
-                i += 1
-                _label = str(_label, encoding='utf-8')
-                _filepath = str(_filepath, encoding='utf-8')
-                _image = np.divide(_image, 255)
-                # _image = cv2.resize(_image, dsize=(331, 331), interpolation=cv2.INTER_CUBIC)
                 _image = np.asarray([_image])
                 _image = _image.reshape(-1, 331, 331, 3)
 
-                with tf.device('/gpu:0'):
-                    predictions = inference_session.run(output_layer, feed_dict={input_layer: _image})
-                predictions = np.squeeze(predictions)
-                overall_result = np.argmax(predictions)
-                predict_result = label_map[overall_result].split(":")[-1]
+                for d in get_available_gpus():
+                    print("Using device: {}".format(d))
+                    with tf.device(d):
+                        predictions = inference_session.run(output_layer, feed_dict={input_layer: _image})
+                    predictions = np.squeeze(predictions)
 
-                if predict_result == 'unknown': continue
+                for i, pred in enumerate(predictions):
+                    count += 1
+                    overall_result = np.argmax(pred)
+                    predict_result = label_map[overall_result].split(":")[-1]
 
-                content = {}
-                content['prob'] = str(np.max(predictions))
-                content['label'] = predict_result
-                content['filepath'] = _filepath
-                res.append(content)
+                    if predict_result == 'unknown': continue
+
+                    content['prob'] = str(np.max(pred))
+                    content['label'] = predict_result
+                    content['filepath'] = str(_filepath[i], encoding='utf-8')
+                    res.append(content)
 
         except tf.errors.OutOfRangeError:
             t2 = time.time()
-            print("average speed: {}s/image".format((t2 - t1) / i))
+            print("{} images processed, average time: {}s".format(count, (t2-t1)/count))
     return res
 
 
 if __name__ == '__main__':
+    # print(get_available_gpus())
     # read model and load model graph
     model_dir = "./model"
     model = "nasnet_large_v1.pb"
@@ -108,7 +117,10 @@ if __name__ == '__main__':
 
     # Initialize session
     initializer = np.zeros([1, 331, 331, 3])
-    inference_session.run(output_layer, feed_dict={input_layer: initializer})
+    for d in get_available_gpus():
+        print("Using device: {}".format(d))
+        with tf.device(d):
+            inference_session.run(output_layer, feed_dict={input_layer: initializer})
 
     # Prediction
     file_list = []
