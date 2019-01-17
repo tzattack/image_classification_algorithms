@@ -62,37 +62,40 @@ def predict(filename):
     with tf.Session() as sess:
         tf.global_variables_initializer()
         t1 = time.time()
-        res = []
+        result = []
         content = {}
         count = 0
         try:
             while True:
-                [_image, _label, _filepath] = sess.run(fetches=features)
-                _image = np.asarray([_image])
-                _image = _image.reshape(-1, 331, 331, 3)
-
                 for d in get_available_gpus():
                     print("Using device: {}".format(d))
                     with tf.device(d):
+                        [_image, _label, _filepath] = sess.run(fetches=features)
+                        _image = np.asarray([_image])
+                        _image = _image.reshape(-1, 331, 331, 3)
+
                         predictions = inference_session.run(output_layer, feed_dict={input_layer: _image})
-                    predictions = np.squeeze(predictions)
+                        predictions = np.squeeze(predictions)
 
-                for i, pred in enumerate(predictions):
-                    count += 1
-                    overall_result = np.argmax(pred)
-                    predict_result = label_map[overall_result].split(":")[-1]
+                        res = []
+                        for i, pred in enumerate(predictions):
+                            count += 1
+                            overall_result = np.argmax(pred)
+                            predict_result = label_map[overall_result].split(":")[-1]
 
-                    if predict_result == 'unknown': continue
+                            if predict_result == 'unknown': continue
 
-                    content['prob'] = str(np.max(pred))
-                    content['label'] = predict_result
-                    content['filepath'] = str(_filepath[i], encoding='utf-8')
-                    res.append(content)
+                            content['prob'] = str(np.max(pred))
+                            content['label'] = predict_result
+                            content['filepath'] = str(_filepath[i], encoding='utf-8')
+                            res.append(content)
+                        result += res
+                        res = []
 
         except tf.errors.OutOfRangeError:
             t2 = time.time()
             print("{} images processed, average time: {}s".format(count, (t2-t1)/count))
-    return res
+    return result
 
 
 if __name__ == '__main__':
@@ -117,10 +120,9 @@ if __name__ == '__main__':
 
     # Initialize session
     initializer = np.zeros([1, 331, 331, 3])
-    for d in get_available_gpus():
-        print("Using device: {}".format(d))
-        with tf.device(d):
-            inference_session.run(output_layer, feed_dict={input_layer: initializer})
+    print("Initialing session...")
+    inference_session.run(output_layer, feed_dict={input_layer: initializer})
+    print("Done initialing.")
 
     # Prediction
     file_list = []
