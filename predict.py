@@ -73,7 +73,6 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
                 predictions = inference_sess.run(output_layer, feed_dict={input_layer: _image})
                 predictions = np.squeeze(predictions)
 
-                # res = []
                 # start = time.time()
                 for i, pred in enumerate(predictions):
                     count += 1
@@ -85,7 +84,9 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
                     content['prob'] = str(np.max(pred))
                     content['label'] = predict_result
                     content['filepath'] = str(_filepath[i], encoding='utf-8')
+                    # print(content)
                     result.append(content)
+                    content={}
                 # end = time.time()
                 # print("process time: {}s".format(end-start))
         except tf.errors.OutOfRangeError:
