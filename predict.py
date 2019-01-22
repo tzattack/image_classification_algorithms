@@ -95,22 +95,22 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
     return result
 
 def write_process_file(file, model, processed_files):
-    with open('./model_output/processed_files/{}_{}_processed_files.json'.format(file.split('.')[0], model.split('.')[0]), 'w') as f:
+    with open('{}/processed_files/{}_{}_processed_files.json'.format(output_dir, file.split('.')[0], model.split('.')[0]), 'w') as f:
         f.write(json.dumps(processed_files))
 
 def check_processed_files():
     import tensorflow as tf
 
     processed_files = []
-    if not tf.gfile.Exists("./model_output/processed_files"):
-        tf.gfile.MakeDirs("./model_output/processed_files")
-    for path, dir, files in os.walk('./model_output/processed_files'):
+    if not tf.gfile.Exists("{}/processed_files".format(output_dir)):
+        tf.gfile.MakeDirs("{}/processed_files".format(output_dir))
+    for path, dir, files in os.walk('{}/processed_files'.format(output_dir)):
         for file in files:
             processed_files.append(file.split('_')[0]+'.tfrecord')
     return processed_files
 
 def write_classify_result(file, model, result):
-    with open('./model_output/classify_result/{}_{}_classify_result.json'.format(file.split('.')[0], model.split('.')[0]), 'w') as f:
+    with open('{}/classify_result/{}_{}_classify_result.json'.format(output_dir, file.split('.')[0], model.split('.')[0]), 'w') as f:
         f.write(json.dumps(result, indent=4, separators=(',',':')))
 
 def set_locker():
@@ -171,7 +171,7 @@ def main(gpu_num):
         # start = time.time()
         # set_locker()
 
-        for path, dir, files in os.walk("./data_input"):
+        for path, dir, files in os.walk(input_dir):
             files = files
             # file = files[0]
 
@@ -198,7 +198,7 @@ def main(gpu_num):
 
         # set_unlocker()
 
-        file_path = os.path.join('./data_input', file)
+        file_path = os.path.join(input_dir, file)
         file_list.append(file_path)
         # stop = time.time()
         # print("process time:", (stop-start))
@@ -218,8 +218,18 @@ def main(gpu_num):
             result=result
         )
 
+def load_settings():
+    with open('settings.txt','r') as f:
+        content = f.read()
+
+    dict = json.loads(content)
+    input_dir = dict["input_dir"]
+    output_dir = dict["output_dir"]
+    return input_dir, output_dir
+
 if __name__ == '__main__':
     gpu_num = sys.argv[1]
+    input_dir, output_dir = load_settings()
     # set_unlocker()
     print("using gpu {}".format(gpu_num))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num)
