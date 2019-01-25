@@ -164,7 +164,7 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_string(
-    'model_name', 'nasnet_large', 'The name of the architecture to train.')
+    'model_name', 'inception_v3', 'The name of the architecture to train.')
 
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
