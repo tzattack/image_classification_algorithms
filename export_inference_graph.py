@@ -12,7 +12,7 @@ from nets import nets_factory
 slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_string(
-    'model_name', 'nasnet_large', 'The name of the architecture to save.')
+    'model_name', 'inception_v3', 'The name of the architecture to save.')
 
 tf.app.flags.DEFINE_boolean(
     'is_training', False,
@@ -37,7 +37,7 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_string(
-    'output_file', './inference/nasnet_large_inf_graph.pb', 'Where to save the resulting file to.')
+    'output_file', './inference/graph.pb', 'Where to save the resulting file to.')
 
 tf.app.flags.DEFINE_string(
     'dataset_dir', './data_train', 'Directory to save intermediate dataset files to')

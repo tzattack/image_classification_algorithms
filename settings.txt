@@ -1,0 +1,4 @@
+{
+  "input_dir":"./data_input",
+  "output_dir":"./model_output"
+}

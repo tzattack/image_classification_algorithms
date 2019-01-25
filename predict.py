@@ -83,7 +83,10 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
 
                     content['prob'] = str(np.max(pred))
                     content['label'] = predict_result
-                    content['filepath'] = str(_filepath[i], encoding='utf-8')
+                    try:
+                        content['filepath'] = str(_filepath[i], encoding='utf-8')
+                    except:
+                        content['filepath'] = str('None', encoding='utf-8')
                     # print(content)
                     result.append(content)
                     content={}
@@ -94,22 +97,30 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
             print("GPU {}\t{}\t{} images\tspeed: {}s".format(process_id, filename, count, (t2-t1)/count))
     return result
 
-def write_process_file(file, model, processed_files):
+def write_processed_file(file, model, processed_files):
     with open('{}/processed_files/{}_{}_processed_files.json'.format(output_dir, file.split('.')[0], model.split('.')[0]), 'w') as f:
-        f.write(json.dumps(processed_files))
+        f.write(json.dumps([]))
 
-def check_processed_files():
+def write_reading_lock(file, model, processed_files):
+    with open('{}/reading_lock/{}'.format(output_dir, file), 'w') as f:
+        f.write(json.dumps([]))
+
+def check_reading_lock():
     import tensorflow as tf
 
     processed_files = []
-    if not tf.gfile.Exists("{}/processed_files".format(output_dir)):
-        tf.gfile.MakeDirs("{}/processed_files".format(output_dir))
-    for path, dir, files in os.walk('{}/processed_files'.format(output_dir)):
+    if not tf.gfile.Exists("{}/reading_lock".format(output_dir)):
+        tf.gfile.MakeDirs("{}/reading_lock".format(output_dir))
+    for path, dir, files in os.walk('{}/reading_lock'.format(output_dir)):
         for file in files:
-            processed_files.append(file.split('_')[0]+'.tfrecord')
+            processed_files.append(file.split('.')[0]+'.tfrecord')
     return processed_files
 
 def write_classify_result(file, model, result):
+    import tensorflow as tf
+
+    if not tf.gfile.Exists("{}/classify_result".format(output_dir)):
+        tf.gfile.MakeDirs("{}/classify_result".format(output_dir))
     with open('{}/classify_result/{}_{}_classify_result.json'.format(output_dir, file.split('.')[0], model.split('.')[0]), 'w') as f:
         f.write(json.dumps(result, indent=4, separators=(',',':')))
 
@@ -167,16 +178,27 @@ def main(gpu_num):
     file_list = []
 
     while True:
-        processed_files = check_processed_files()
+        processed_files = check_reading_lock()
+        # print(processed_files)
         # start = time.time()
         # set_locker()
-
-        for path, dir, files in os.walk(input_dir):
-            files = files
+        files = []
+        for path, dir, file_path in os.walk(input_dir):
+            for file in file_path:
+                files.append(file)
+        # print(files)
             # file = files[0]
-
+        # print(files)
         # print("GPU {}".format(gpu_num))
         if '.DS_Store' in files: files.remove('.DS_Store')
+
+        for processed_file in processed_files:
+            if processed_file not in files:
+                try:
+                    os.remove(os.path.join(output_dir, 'reading_lock', processed_file))
+                except:
+                    pass
+
         files = list(set(files).difference(set(processed_files)))
         files.sort()
         # print("GPU{}: ".format(gpu_num), files)
@@ -189,7 +211,7 @@ def main(gpu_num):
             file = files[0]
         # print("Reading file {}".format(file))
         processed_files.append(file)
-        write_process_file(
+        write_reading_lock(
             file=file,
             model=model,
             processed_files=processed_files
@@ -216,6 +238,12 @@ def main(gpu_num):
             file=file,
             model=model,
             result=result
+        )
+
+        write_processed_file(
+            file=file,
+            model=model,
+            processed_files=processed_files
         )
 
 def load_settings():

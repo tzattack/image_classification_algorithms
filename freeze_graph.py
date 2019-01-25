@@ -242,7 +242,7 @@ def run_main():
   parser.add_argument(
       "--input_graph",
       type=str,
-      default="./inference/nasnet_large_inf_graph.pb",
+      default="./inference/graph.pb",
       help="TensorFlow \'GraphDef\' file to load.")
   parser.add_argument(
       "--input_saver",
@@ -262,7 +262,7 @@ def run_main():
   parser.add_argument(
       "--output_graph",
       type=str,
-      default="./model/nasnet_shangshu.pb",
+      default="./model/inception_v3_shangshu.pb",
       help="Output \'GraphDef\' file name.")
   parser.add_argument(
       "--input_binary",
@@ -274,7 +274,7 @@ def run_main():
   parser.add_argument(
       "--output_node_names",
       type=str,
-      default="final_layer/predictions",
+      default="Logits/Predictions",
       help="The name of the output nodes, comma separated.")
   parser.add_argument(
       "--restore_op_name",
