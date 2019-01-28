@@ -1,8 +1,20 @@
 import os, time, json, multiprocessing, sys, random
 # Set log level
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
+import logging
+import tensorflow as tf
+#save error message into tensorflow.log
+log = logging.getLogger('tensorflow')
+log.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh = logging.FileHandler('./logging/tensorflow.log')
+fh.setLevel(logging.ERROR)
+fh.setFormatter(formatter)
+log.addHandler(fh)
 
 batch_size = 16
+PredictionFile = 'PredictionFile.txt'
 
 def get_available_gpus():
     from tensorflow.python.client import device_lib
@@ -73,8 +85,18 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
                 predictions = inference_sess.run(output_layer, feed_dict={input_layer: _image})
                 predictions = np.squeeze(predictions)
 
+                f = open(PredictionFile, 'a+')
+                
+
                 # start = time.time()
                 for i, pred in enumerate(predictions):
+                    f.write(str(_filepath[i],encoding='utf-8'))
+                    f.write('\n')
+                    f.write(str(_label[i],encoding='utf-8'))
+                    f.write('\n')
+                    f.write(str(predictions[i]))
+                    f.write('\n')
+
                     count += 1
                     overall_result = np.argmax(pred)
                     predict_result = label_map[overall_result].split(":")[-1]
@@ -92,6 +114,7 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
                     content={}
                 # end = time.time()
                 # print("process time: {}s".format(end-start))
+                f.close()
         except tf.errors.OutOfRangeError:
             t2 = time.time()
             print("GPU {}\t{}\t{} images\tspeed: {}s".format(process_id, filename, count, (t2-t1)/count))
@@ -258,6 +281,8 @@ def load_settings():
 if __name__ == '__main__':
     gpu_num = sys.argv[1]
     input_dir, output_dir = load_settings()
+    tf.logging.error("someting error and test succeed")
+    tf.logging.warning("something warn")
     # set_unlocker()
     print("using gpu {}".format(gpu_num))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num)
