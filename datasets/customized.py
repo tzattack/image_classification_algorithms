@@ -16,7 +16,9 @@ _FILE_PATTERN = '*.tfrecord'
 SPLITS_TO_SIZES = {'train': 100000, 'validation':0}
 
 # Set number of classes
-_NUM_CLASSES = 4
+with open('./data_train/labels.txt', 'r') as f:
+    lines = f.readlines()
+    _NUM_CLASSES = len(lines)
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',
