@@ -274,7 +274,7 @@ def run_main():
   parser.add_argument(
       "--output_node_names",
       type=str,
-      default="Logits/Predictions",
+      default="InceptionV3/Predictions/Reshape_1",
       help="The name of the output nodes, comma separated.")
   parser.add_argument(
       "--restore_op_name",
