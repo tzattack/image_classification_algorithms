@@ -45,7 +45,7 @@ def get_dataset(filename):
             })
         image_data = tf.cast(feats['image/encoded'], tf.string)
         image_data = tf.image.decode_jpeg(image_data)
-        image_data = tf.image.resize_images(image_data, [331, 331])
+        image_data = tf.image.resize_images(image_data, [299, 299])
         image_data = tf.divide(image_data, 255)
         label = tf.cast(feats['image/class/label'], tf.string)
         filepath = tf.cast(feats['image/filepath'], tf.string)
@@ -80,21 +80,30 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
             while True:
                 [_image, _label, _filepath] = sess.run(fetches=features)
                 _image = np.asarray([_image])
-                _image = _image.reshape(-1, 331, 331, 3)
+                _image = _image.reshape(-1, 299, 299, 3)
 
                 predictions = inference_sess.run(output_layer, feed_dict={input_layer: _image})
                 predictions = np.squeeze(predictions)
 
                 f = open(PredictionFile, 'a+')
-                
+
 
                 # start = time.time()
                 for i, pred in enumerate(predictions):
-                    f.write(str(_filepath[i],encoding='utf-8'))
+                    try:
+                        f.write(str(_filepath[i],encoding='utf-8'))
+                    except:
+                        f.write("None")
                     f.write('\n')
-                    f.write(str(_label[i],encoding='utf-8'))
+                    try:
+                        f.write(str(_label[i],encoding='utf-8'))
+                    except:
+                        f.write("None")
                     f.write('\n')
-                    f.write(str(predictions[i]))
+                    try:
+                        f.write(str(predictions[i]))
+                    except:
+                        f.write("None")
                     f.write('\n')
 
                     count += 1
@@ -169,7 +178,7 @@ def main(gpu_num):
 
     # read model and load model graph
     model_dir = "./model"
-    model = "nasnet_large_v1.pb"
+    model = "inception_v3_shangshu.pb"
     model_path = os.path.join(model_dir, model)
     model_graph = tf.Graph()
     with model_graph.as_default():
@@ -178,7 +187,7 @@ def main(gpu_num):
             graph_def.ParseFromString(f.read())
             _ = tf.import_graph_def(graph_def, name='')
             input_layer = model_graph.get_tensor_by_name("input:0")
-            output_layer = model_graph.get_tensor_by_name('final_layer/predictions:0')
+            output_layer = model_graph.get_tensor_by_name('InceptionV3/Predictions/Reshape_1:0')
 
     config1 = tf.ConfigProto(
         # device_count={"GPU": 1},
@@ -188,11 +197,11 @@ def main(gpu_num):
     )
     config2 = tf.ConfigProto()
     config = config1
-    config.gpu_options.allow_growth = False
+    config.gpu_options.allow_growth = True
     inference_session = tf.Session(graph=model_graph, config=config)
 
     # Initialize session
-    initializer = np.zeros([1, 331, 331, 3])
+    initializer = np.zeros([1, 299, 299, 3])
     inference_session.run(output_layer, feed_dict={input_layer: initializer})
     print("GPU {} is ready.".format(gpu_num))
 
@@ -279,10 +288,13 @@ def load_settings():
     return input_dir, output_dir
 
 if __name__ == '__main__':
+    if sys.argv == ['predict.py']:
+        sys.argv = ['predict.py', '0']
+    # print(sys.argv)
     gpu_num = sys.argv[1]
     input_dir, output_dir = load_settings()
-    tf.logging.error("someting error and test succeed")
-    tf.logging.warning("something warn")
+    # tf.logging.error("something error and test succeed")
+    # tf.logging.warning("something warn")
     # set_unlocker()
     print("using gpu {}".format(gpu_num))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num)
