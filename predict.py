@@ -89,7 +89,7 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
 
                 # start = time.time()
                 for i, pred in enumerate(predictions):
-                    if not isinstance(pred, list):
+                    if list(predictions.shape)[1] == None:
                         try:
                             f.write(str(_filepath[0], encoding='utf-8'))
                         except:
@@ -332,3 +332,4 @@ if __name__ == '__main__':
     print("using gpu {}".format(gpu_num))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num)
     main(gpu_num)
+
