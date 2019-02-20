@@ -89,7 +89,8 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
 
                 # start = time.time()
                 for i, pred in enumerate(predictions):
-                    if list(predictions.shape)[1] == None:
+                    if predictions.ndim == 1:
+                        print('111')
                         try:
                             f.write(str(_filepath[0], encoding='utf-8'))
                         except:
