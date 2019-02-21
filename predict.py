@@ -87,40 +87,74 @@ def predict(process_id, filename, inference_sess, input_layer, output_layer):
 
                 f = open(PredictionFile, 'a+')
 
-
                 # start = time.time()
                 for i, pred in enumerate(predictions):
-                    try:
-                        f.write(str(_filepath[i],encoding='utf-8'))
-                    except:
-                        f.write("None")
-                    f.write('\n')
-                    try:
-                        f.write(str(_label[i],encoding='utf-8'))
-                    except:
-                        f.write("None")
-                    f.write('\n')
-                    try:
-                        f.write(str(predictions[i]))
-                    except:
-                        f.write("None")
-                    f.write('\n')
+                    if predictions.ndim == 1:
+                        print('111')
+                        try:
+                            f.write(str(_filepath[0], encoding='utf-8'))
+                        except:
+                            f.write("None")
+                        f.write('\n')
+                        try:
+                            f.write(str(_label[0], encoding='utf-8'))
+                        except:
+                            f.write("None")
+                        f.write('\n')
+                        try:
+                            f.write(str(predictions))
+                        except:
+                            f.write("None")
+                        f.write('\n')
 
-                    count += 1
-                    overall_result = np.argmax(pred)
-                    predict_result = label_map[overall_result].split(":")[-1]
+                        count += 1
+                        overall_result = np.argmax(predictions)
+                        predict_result = label_map[overall_result].split(":")[-1]
 
-                    if predict_result == 'unknown': continue
+                        if predict_result == 'unknown': continue
 
-                    content['prob'] = str(np.max(pred))
-                    content['label'] = predict_result
-                    try:
-                        content['filepath'] = str(_filepath[i], encoding='utf-8')
-                    except:
-                        content['filepath'] = str('None', encoding='utf-8')
-                    # print(content)
-                    result.append(content)
-                    content={}
+                        content['prob'] = str(np.max(predictions))
+                        content['label'] = predict_result
+                        try:
+                            content['filepath'] = str(_filepath[0], encoding='utf-8')
+                        except:
+                            content['filepath'] = str('None', encoding='utf-8')
+                        # print(content)
+                        result.append(content)
+                        content = {}
+                        break
+                    else:
+                        try:
+                            f.write(str(_filepath[i],encoding='utf-8'))
+                        except:
+                            f.write("None")
+                        f.write('\n')
+                        try:
+                            f.write(str(_label[i],encoding='utf-8'))
+                        except:
+                            f.write("None")
+                        f.write('\n')
+                        try:
+                            f.write(str(predictions[i]))
+                        except:
+                            f.write("None")
+                        f.write('\n')
+
+                        count += 1
+                        overall_result = np.argmax(pred)
+                        predict_result = label_map[overall_result].split(":")[-1]
+
+                        if predict_result == 'unknown': continue
+
+                        content['prob'] = str(np.max(pred))
+                        content['label'] = predict_result
+                        try:
+                            content['filepath'] = str(_filepath[i], encoding='utf-8')
+                        except:
+                            content['filepath'] = str('None', encoding='utf-8')
+                        # print(content)
+                        result.append(content)
+                        content={}
                 # end = time.time()
                 # print("process time: {}s".format(end-start))
                 f.close()
@@ -299,3 +333,4 @@ if __name__ == '__main__':
     print("using gpu {}".format(gpu_num))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num)
     main(gpu_num)
+

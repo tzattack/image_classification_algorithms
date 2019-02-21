@@ -21,7 +21,7 @@ op_list = ['fliph', 'flipv', 'noise_0.01', 'noise_0.5', \
 
 for dir in data_raw_list:
     print(dir)
-    while len([name for name in os.listdir(dir) if os.path.isfile(os.path.join(dir, name))]) < max_count:
+    while len([name for name in os.listdir(dir) if os.path.isfile(os.path.join(dir, name))]) < max_count // 2:
         os.system('python3 main.py {} {} {}'.format(dir, random.choice(op_list), random.choice(op_list)))
         # print(dir, random.choice(op_list), random.choice(op_list))
         count = 0
