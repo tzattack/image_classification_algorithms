@@ -549,4 +549,5 @@ def main(_):
 
 
 if __name__ == '__main__':
+  os.environ["CUDA_VISIBLE_DEVICES"] = '0'
   tf.app.run()
